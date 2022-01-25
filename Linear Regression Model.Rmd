@@ -1,0 +1,259 @@
+---
+title: Linear Regression
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  html_notebook: default
+  
+---
+---
+
+1. Load the abalone data.
+```{r}
+abalone <- read.csv("abalone.data", header=FALSE)
+colnames(abalone) <- c('Sex', 'Length', 'Diameter', 'Height', 'Whole Weight', 
+                       'Shucked Weight', 'Viscera Weight', 'Shell Weight', 'Rings')
+
+
+summary(abalone)
+head(abalone)
+```
+
+2. Correlation analysis
+
+
+```{r}
+# Please insert your codes for processing here....
+head(abalone)
+data <- abalone[2:9] # Checking any pair of variables are linearly related by taking all the attributes except first attribute which is in character form ,into scatter plots
+pairs(data)
+# The below are the scatterplots of each abalone attribute plotted against each other
+# By removing male and female attributes
+```
+
+```{r}
+# preprocess the data in order to have a better model performance by using correlation analysis
+# Calculating the correlation between the attributes length and diameter using cor() function
+# The correlation coefficient is always bounded by -1 and +1
+# The variables Length and Diameter are closely related as |r| closer to +1
+cor(data$Length, data$Diameter)
+```
+
+```{r}
+cor(data$Height, data$Rings)
+# The variables Height and Rings are not linearly correlated because |r| smaller 
+```
+
+```{r}
+cor(data$`Whole Weight`, data$`Shucked Weight`)
+# The variables Whole Weight, Shucked Weight are more linearly correlated variables as the |r| is closer to +1
+# The closer r is to +1 or -1, the more closely the two variables are related
+```
+
+```{r}
+cor(data$`Viscera Weight`, data$`Shell Weight`)
+# # The variables Viscera Weight, Shell Weight are more linearly correlated variables as the |r| is closer to +1
+```
+
+```{r}
+summary(abalone$Rings)
+# As shown below, Rings variable has a range between 1-29
+
+```
+
+
+
+```{r}
+# preprocess the data in order to have a better model performance by using categorical feature encoding
+# Categorical feature encoding is an important data processing step required for a better model performance
+# install.packages("tidyverse")
+library(tidyverse)
+
+```
+
+
+```{r}
+model <- lm(Rings ~ Sex, data = abalone)
+summary(model)$coef
+```
+
+```{r}
+# Categorical variables with more than two levels
+# a categorical variable with n levels will be transformed into n-1 variables each with two levels
+# These n-1 new variables contain the same information than the single variable
+# This recoding creates a table called contrast matrix
+# For example Sex in the abalone data has three levels: "Male", "Female", "Infant"
+# This variable could be dummy coded into two variables, one called Male and one Infant:
+res <- model.matrix(~Sex, data = abalone)
+head(res[, -1])
+# 
+```
+
+3. Fitting the data using a linear regression model with all 8 variables and interpret the model fitness by explaining the 4 diagnostic plots: Residuals vs Fitted, Normal Q-Q, Scale-Location, and Residuals vs Leverage. 
+
+```{r}
+# Please insert your codes for processing here....
+# Fitting the data using a linear regression model with two variables Length and Diameter
+fit <- lm(Length~Diameter, data=abalone)
+plot(fit)
+# Residuals vs Fitted used to check the linear relationship assumptions. All the residual points are very close to the horizontal line which is an indication of good linear relationship as there is a pattern in the residual plot
+# Normal Q-Q  Used to examine whether the residuals are normally distributed.Most of the residual points following the straight dashed line
+# Scale-Location Used to check the homogeneity of variance of the residuals. We have very close homoscedasticity indication, where points are spread equally from horizontal line
+# Residuals vs Leverage Used to identify influential cases, that is extreme values that might influence the regression results when included or excluded from the analysis
+# The plot highlights one extreme point(1211) with a standardized residuals below -15
+# All cases are well inside of the Cook's distance lines(a red dashed line)
+```
+
+
+```{r}
+# Fitting the data using a linear regression model with two variables Height and Rings
+fit <- lm(Height~Rings, data=abalone)
+plot(fit)
+# In Residuals vs Fitted A horizontal line, without distinct patterns is an indication for a linear relationship, what is good
+# In Normal Q-Q, the residuals points follow the straight dashed line.
+# In Scale-Location, Horizontal line with equally spread points is a good indication of homoscedasticity.
+# In Residuals vs Leverage, there are extreme values that might influence the regression results when included or excluded from the analysis.
+
+```
+
+```{r}
+# Fitting the data using a linear regression model with two variables whole Weight and Shucked Weight
+fit <- lm(`Whole Weight`~ `Shucked Weight`, data=abalone)
+plot(fit)
+# In Residuals vs Fitted A horizontal line, without distinct patterns is an indication for a linear relationship, which is good
+# In Normal Q-Q, not all the residuals points following the straight dashed line.
+# In Scale-Location, Horizontal line with equally spread points is a good indication of homoscedasticity.
+# In Residuals vs Leverage, there are extreme values that might influence the regression results when included or excluded from the analysis.
+
+```
+
+```{r}
+# Fitting the data using a linear regression model with two variables Viscera Weight and Shell Weight
+fit <- lm(`Viscera Weight`~ `Shell Weight`, data=abalone)
+plot(fit)
+# In Residuals vs Fitted A horizontal line, not that many distinct patterns is an indication for a linear relationship, which is good
+# In Normal Q-Q, not all the residuals points following the straight dashed line.
+# In Scale-Location, Horizontal line with equally spread points is a good indication of homoscedasticity.
+# In Residuals vs Leverage, there are extreme values that might influence the regression results when included or excluded from the analysis.
+
+
+```
+
+4. Finding the best model
+
+```{r}
+# Please insert your codes for processing here....
+# Hypothesizing which independent variables are a good predictor of dependent variable
+# To decide which variables to choose is by checking the VIF scores for each of the independent variables
+# VIF scores will tell if variables are multicollinear
+#install.packages("usdm", repos="http://R-Forge.R-project.org")
+library(usdm)
+# Using the vif() function from the usdm package to check the VIF scores for the entire data set
+vif(abalone[2:9]) # # Excluding first column which is in character form that is "Sex"
+# A high VIF score means that there is multicollinearity between certain independent variables
+# we need to eliminate the predictor variables that are highly correlated to each other.
+# For the abalone data set,we have 4 variables dealing with the weight of an abalone,so they are highly correlated to each other, we can confirm this through high VIF scores
+# we chose the predictor variable with the lower VIF score which is "Viscera Weight"
+# Also notice that length and diameter both have high VIF scores because they are correlated to each other
+# Again we chose the predictor variable with the lower VIF score which is "Length"
+# Now we have four variables Viscera Weight, Length, Height and Sex might be good predictors of dependent variable, Rings
+# The age of abalone is determined by cutting the shell through the cone, staining it, and counting the number of rings through a microscope
+
+```
+
+
+```{r}
+# Using the data and our four selected independent variables to create a model
+# This will give us coefficients for each independent variable.
+# For this step, we are using the lm() function. Our response variable is the age of the abalone, which is measured by the number of rings
+abalone_model <- lm(Rings ~ Length + Height + `Viscera Weight` + Sex, data = abalone)
+summary(abalone_model) # Evaluate each of the independent variables and the model as a whole by using summary() function to evaluate the abalone model
+# The numbers under the “Estimate” column are the coefficients for each of the predictor variables
+# To evaluate the significance of each variable, by looking at the “Pr(>|t|)” column. 
+# The significance codes are listed underneath the table; the more stars, the more significant the predictor variable is.
+# Noticing that all of the variables are less than 0.05 (the most common α to determine significance) except for “genderM.” 
+# the gender variable is comprised of three character levels, male (M), female (F), and infant (I), dummy variables were created.
+# In the model, both “gender I” and “gender M” are present and these act as binary variables in the regression model.
+# In the bottom section of the summary output, we have Residual standard error, Multiple R-square and F-statistic 
+# The Residual Standard Error is the estimate of the standard deviation of ϵ which is a small number.
+# The Multiple R-squared, also called the coefficient of determination is the proportion of the variance in the data that’s explained by the model
+# The R-squared value in the abalone data set is 0.3607 which indicates that roughly 36% of the variance is explained. 
+# A good model will have a high F-statistic and a small p-value based on the α chosen for the model.
+```
+
+
+```{r}
+# Running the model again by leaving out gender as a variable
+abalone_model <- lm(Rings ~ Length + Height + `Viscera Weight`, data = abalone)
+summary(abalone_model) # Running the summary statistics and evaluate the new variables and model.
+# The Residual Standard Error is the estimate of the standard deviation of ϵ which is 2.619 greater than the above model.
+# The R-squared value in the abalone data set is 0.3408 which indicates that roughly 34% of the variance is explained.
+# F-statistic: 719.3 is very high than the above model, which indicates that this model is better fit than the above model.
+# The variable Viscera Weight is significant using an α of 0.05
+# the larger the R2, the better the regression model fits the observations.
+```
+
+
+```{r}
+# Testing all of the assumptions using the plot function and the model we created.
+# Plot 1: Residuals vs Fitted
+plot(abalone_model, which = 1, id.n = 5) # which refers to a subset of plots is required, specify a subset of the numbers 1
+# id.n refers to number of points to be labelled in each plot, starting with the most extreme.
+# The first plot tests for linearity and heteroskedasticity.
+# Based on this plot, the residuals are heteroskedastic which indicates dependency between the residuals and the fitted values.
+# heteroskedastic refers to data with unequal variability(scatter) across a set of second, predictor variables.
+```
+
+
+```{r}
+# Plot 2: Normal Q-Q
+plot(abalone_model, which = 2, id.n = 5)
+# The second plot tests for the normality of the residuals. 
+# This plot shows that the residuals are “heavy tailed” 
+```
+
+
+```{r}
+# Plot 3: Scale-Location
+plot(abalone_model, which = 3, id.n = 5)
+# The third plot also tests for heteroskedasticity.
+# Scale-Location Used to check the homogeneity of variance of the residuals.
+# Like plot 1, the residuals are not evenly spread across the line.
+
+```
+
+
+```{r}
+# Plot 4: Cook’s Distance
+plot(abalone_model, which = 4, id.n = 5)
+# fourth model, Cook’s distance, shows the outliers. 
+# We set the default as to show the top five values.
+# In the plot 4, we can see one clear outlier.
+```
+
+
+```{r}
+# Plot 5: Residuals vs Leverage
+plot(abalone_model, which = 5, id.n = 5)
+# This plot helps us to find if any specific data points are influencing the model.
+# The two points that are leveraging the outcome is the “1418” and “2052” which were also shown in the Cook’s Distance plot above.
+# A dataset with a low-leverage, but high-standardized residual point
+
+```
+
+
+```{r}
+# Conclusion
+# Our R-squared value to predict the age of an abalone was low (0.3607).
+# However, a high R-squared does not necessarily indicate that the model has a good fit. 
+# All of our predictor variables were statistically significant with p-values that were lower than the α of 0.05. 
+# For this reason, we were still able to draw some conclusions about our variables but maybe Multiple Linear Regression model is not the best way to predict the age of an abalone.
+# Multiple Linear Regression refers to two or more independent variables are used to predict the value of a dependent variable.
+# In this model we used four independent variables "Sex", "Length", "Height", "Viscera Weight" to predict the value of a dependent variable "Rings" which gives the age of an abalone
+```
+
+
+
+
+
